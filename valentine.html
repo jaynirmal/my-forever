@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Be My Valentine ❤️</title>
+  <style>
+    :root { --bg1:#ffdde1; --bg2:#ee9ca7; --card:#ffffffcc; --text:#1f1f1f; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: -apple-system, system-ui, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      color: var(--text);
+      overflow: hidden;
+    }
+    .card {
+      width: min(520px, 92vw);
+      padding: 28px 22px;
+      border-radius: 18px;
+      background: var(--card);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.15);
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+    h1 { margin: 6px 0 10px; font-size: 29px; }
+    p { margin: 0 0 18px; font-size: 16px; opacity: .9; }
+
+    /* Make a fixed "play area" so the NO button can move within it */
+    .buttons {
+      position: relative;
+      width: min(420px, 86vw);
+      height: 110px;
+      margin: 14px auto 0;
+    }
+
+    button {
+      border: 0;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform .12s ease, opacity .12s ease, left .18s ease, top .18s ease;
+      user-select: none;
+      min-width: 120px;
+      position: absolute;
+    }
+    button:active { transform: scale(.98); }
+
+    .yes { background: #ff3b7a; color: white; left: 50%; top: 10px; transform: translateX(-120%); }
+    .no  { background: #2f2f2f; color: white; left: 50%; top: 10px; transform: translateX(20%); opacity: .92; }
+
+    .message {
+      display: none;
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 14px;
+      background: #fff;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.06);
+      line-height: 1.45;
+      font-size: 16px;
+      animation: pop .35s ease;
+    }
+    .message.show { display: block; }
+    @keyframes pop { from { transform: translateY(6px); opacity: .2; } to { transform: translateY(0); opacity: 1; } }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 13px;
+      opacity: .7;
+      min-height: 18px;
+    }
+
+    /* Floating hearts */
+    .heart {
+      position: absolute;
+      font-size: 18px;
+      opacity: .85;
+      animation: floatUp linear forwards;
+      pointer-events: none;
+      z-index: 1;
+      filter: drop-shadow(0 6px 10px rgba(0,0,0,.10));
+    }
+    @keyframes floatUp {
+      from { transform: translateY(0) scale(1); opacity: .9; }
+      to   { transform: translateY(-120vh) scale(1.4); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card" role="main" aria-live="polite">
+    <h1>Will you be my Valentine? ❤️</h1>
+    <p>Tap a button, my love 😊</p>
+
+    <div class="buttons" id="arena">
+      <button class="yes" id="yesBtn">YES</button>
+      <button class="no" id="noBtn" aria-label="No (good luck clicking this)">NO</button>
+    </div>
+
+    <div class="message" id="msg">
+      <div style="font-size:18px; margin-bottom:8px;">Correct answer 😄❤️</div>
+      <div>
+You’re my favorite person, my safest place, and my forever.
+        Thank you for choosing me every day. </br></br>
+        Happy Valentine’s Day, my forever 💕
+      </div>
+    </div>
+
+    <div class="hint" id="hint"></div>
+  </div>
+
+  <script>
+    const yesBtn = document.getElementById("yesBtn");
+    const noBtn  = document.getElementById("noBtn");
+    const msg    = document.getElementById("msg");
+    const hint   = document.getElementById("hint");
+    const arena  = document.getElementById("arena");
+
+    function spawnHeartBurst(count = 18) {
+      for (let i = 0; i < count; i++) {
+        const h = document.createElement("div");
+        h.className = "heart";
+        h.textContent = Math.random() > 0.2 ? "❤️" : "💗";
+        h.style.left = Math.random() * 100 + "vw";
+        h.style.bottom = "-20px";
+        h.style.fontSize = (14 + Math.random() * 22) + "px";
+        const dur = 2.8 + Math.random() * 2.5;
+        h.style.animationDuration = dur + "s";
+        document.body.appendChild(h);
+        setTimeout(() => h.remove(), (dur + 0.4) * 1000);
+      }
+    }
+
+    function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+    // Move NO button to a random spot inside the arena
+    function moveNoButton() {
+      const arenaRect = arena.getBoundingClientRect();
+      const btnRect = noBtn.getBoundingClientRect();
+
+      // available space inside arena
+      const maxX = arenaRect.width  - btnRect.width;
+      const maxY = arenaRect.height - btnRect.height;
+
+      // choose random position
+      const x = Math.random() * maxX;
+      const y = (Math.random() * maxY);
+
+      noBtn.style.left = clamp(x, 0, maxX) + "px";
+      noBtn.style.top  = clamp(y, 0, maxY) + "px";
+
+      hint.textContent = "Nope, try again 😄";
+    }
+
+    // Keep YES in a nice place even if layout changes
+    function resetYesPosition() {
+      // Place YES near left-ish, centered vertically
+      yesBtn.style.left = "15px";
+      yesBtn.style.top  = "10px";
+      yesBtn.style.transform = "none";
+    }
+
+    // Initialize positions
+    resetYesPosition();
+    // Start NO near the right
+    noBtn.style.left = "calc(100% - 135px)";
+    noBtn.style.top  = "10px";
+    noBtn.style.transform = "none";
+
+    yesBtn.addEventListener("click", () => {
+      msg.classList.add("show");
+      hint.textContent = "";
+      spawnHeartBurst(26);
+
+      // After YES, stop the game 🙂
+      noBtn.style.pointerEvents = "none";
+      noBtn.style.opacity = "0.35";
+      yesBtn.textContent = "YES ❤️";
+    });
+
+    // Desktop: run away on hover
+    noBtn.addEventListener("mouseenter", moveNoButton);
+
+    // Mobile: run away when finger gets near / tries to tap
+    noBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault(); // prevents actual tap/click
+      moveNoButton();
+    }, { passive: false });
+
+    // If it somehow gets clicked, still run away
+    noBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      moveNoButton();
+      spawnHeartBurst(8);
+    });
+
+    // Optional: if user taps anywhere in arena near NO, make it run
+    arena.addEventListener("click", (e) => {
+      if (e.target === noBtn) return;
+      // If message already shown, ignore
+      if (msg.classList.contains("show")) return;
+    });
+  </script>
+</body>
+</html>
